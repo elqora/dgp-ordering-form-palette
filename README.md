@@ -25,9 +25,48 @@ DGP Ordering remains authoritative for customer input orchestration, selections,
 - [DGP SDK](https://github.com/elqora/dgp-sdk) defines backend handler and fulfillment contracts.
 - [Digital Service Engine](https://github.com/timeax/digital-service-engine) contains the legacy Wrapper and Form Palette integration behavior.
 
-## Status
+## Usage
 
-Repository scaffold only. Adapter implementation and history-preserving migration will be planned after the neutral DGP Ordering contracts exist.
+Create an `OrderingSession`, then provide it to the adapter. `OrderingInput`
+resolves the registered descriptor, filters options using Ordering visibility,
+and synchronizes Form Palette changes back into the session.
+
+```tsx
+const session = createOrderingSession(definition, "root");
+
+<FormPaletteOrderingProvider session={session}>
+  {definition.fields.map((field) => (
+    <OrderingInput key={field.id} field={field} />
+  ))}
+</FormPaletteOrderingProvider>
+```
+
+`createDefaultFormPaletteRegistry()` supplies the standard `InputField`
+variants. Hosts can replace it or register custom descriptors. The
+`useOrderingField` hook bridges custom raw components through Form Palette's
+`useField` API.
+
+`useFormPaletteOrderSubmission()` first runs Form Palette validation and then
+delegates snapshot construction to Ordering. Expression and host-configuration
+failures are returned unchanged, and no snapshot is returned after failure.
+
+## Toolchain
+
+The adapter supports Node.js 22 or newer. React, React DOM, and Form Palette are
+peer dependencies.
+
+```bash
+npm install
+npm run lint
+npm run typecheck
+npm test
+npm run check:boundaries
+npm run build
+npm run check
+```
+
+No generated outputs are committed. `npm run check` is the repository
+completion command.
 
 ## License
 

@@ -34,8 +34,8 @@ This repository is the optional React integration between sibling `dgp-ordering`
 - Ratified means the versioned plain TypeScript contract, required JSON fixtures, rationale, and stable status are merged into `dgp-spec/main`; generated JSON Schemas must also be current once tooling exists. Released means that ratified Spec version is tagged and published.
 - Update this adapter only after affected Spec, Core/SDK, Validation, and Ordering changes. Commit and release it independently after Ordering.
 - The adapter may implement against ratified unreleased contracts, but stable releases require released versions of its protocol dependencies.
-- This repository has no implementation manifest or operational commands yet. Do not invent install, test, lint, type-check, build, or generation commands.
-- When its toolchain is introduced, document all real commands, supported runtimes, generated-output policy, completion criteria, and checks ensuring Form Palette stays here and Ordering never depends back on this package.
+- The package supports Node.js 22 or newer. Use `npm install`, `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`, and `npm run check:boundaries`; `npm run check` is the completion command.
+- No generated outputs are committed. Boundary checks must keep Form Palette and React here, prevent independently authored shared contracts, and preserve the one-way dependency on Ordering.
 
 ## Evidence and references
 
