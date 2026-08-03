@@ -30,7 +30,8 @@ This repository is the optional React integration between sibling `dgp-ordering`
 
 ## Protocol lifecycle and operations
 
-- Ratified means the versioned schema, required fixtures, rationale, and stable status are merged into `dgp-spec/main`; released means that ratified Spec version is tagged and published.
+- Spec owns shared representation, Ordering owns ordering behavior, and this adapter owns only Form Palette integration behavior.
+- Ratified means the versioned plain TypeScript contract, required JSON fixtures, rationale, and stable status are merged into `dgp-spec/main`; generated JSON Schemas must also be current once tooling exists. Released means that ratified Spec version is tagged and published.
 - Update this adapter only after affected Spec, Core/SDK, Validation, and Ordering changes. Commit and release it independently after Ordering.
 - The adapter may implement against ratified unreleased contracts, but stable releases require released versions of its protocol dependencies.
 - This repository has no implementation manifest or operational commands yet. Do not invent install, test, lint, type-check, build, or generation commands.
@@ -39,6 +40,7 @@ This repository is the optional React integration between sibling `dgp-ordering`
 ## Evidence and references
 
 - Ordering authority: sibling `../dgp-ordering`.
+- Shared-contract guide: sibling `../dgp-spec/CONTRACTS.md`.
 - Legacy Wrapper evidence: `D:\Projects\GitHub\digital-service-ui-builder\src\react\inputs\wrapper.tsx`.
 - Legacy bridge and descriptor evidence: `D:\Projects\GitHub\digital-service-ui-builder\src\react\inputs\form-context.tsx`, `src\react\inputs\entries`, and the order-flow provider.
 - Studio consumer: sibling `../dgp-studio`.
