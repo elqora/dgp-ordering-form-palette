@@ -31,4 +31,4 @@ Repository scaffold only. Adapter implementation and history-preserving migratio
 
 ## License
 
-GPL-3.0.
+GPL-3.0-only.

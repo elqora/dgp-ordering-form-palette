@@ -28,6 +28,14 @@ This repository is the optional React integration between sibling `dgp-ordering`
 - Do not expose legacy Wrapper APIs, legacy wire fields, aliases, adapters, or compatibility modes. Preserve accepted UX behavior, not compatibility.
 - Surface Ordering's structured expression failures without converting them into valid submissions or snapshots.
 
+## Protocol lifecycle and operations
+
+- Ratified means the versioned schema, required fixtures, rationale, and stable status are merged into `dgp-spec/main`; released means that ratified Spec version is tagged and published.
+- Update this adapter only after affected Spec, Core/SDK, Validation, and Ordering changes. Commit and release it independently after Ordering.
+- The adapter may implement against ratified unreleased contracts, but stable releases require released versions of its protocol dependencies.
+- This repository has no implementation manifest or operational commands yet. Do not invent install, test, lint, type-check, build, or generation commands.
+- When its toolchain is introduced, document all real commands, supported runtimes, generated-output policy, completion criteria, and checks ensuring Form Palette stays here and Ordering never depends back on this package.
+
 ## Evidence and references
 
 - Ordering authority: sibling `../dgp-ordering`.
@@ -36,4 +44,4 @@ This repository is the optional React integration between sibling `dgp-ordering`
 - Studio consumer: sibling `../dgp-studio`.
 - Siblings: `../dgp-spec`, `../dgp-core`, `../dgp-validation`, `../dgp-workspace`, and `../dgp-sdk`.
 
-This repository remains GPL-3.0.
+This repository remains GPL-3.0-only. Future manifests and source headers must use that exact SPDX identifier.
