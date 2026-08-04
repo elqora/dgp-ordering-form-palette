@@ -1,14 +1,17 @@
 # Form Palette adapter migration evidence
 
-| Concern | Legacy evidence | DGP v1 disposition |
-| --- | --- | --- |
-| Form lifetime | `src/react/inputs/form-context.tsx` | Retain Form Palette persistence, validation, subscriptions, and submission through the current `Form`/`useCore` API. Retire the compatibility selection bag. |
-| Field bridge | `src/react/inputs/wrapper.tsx` | Retain descriptor-driven value and selected-option extraction. Write canonical state only through `OrderingSession`. |
-| Visible options | Wrapper and Core option helpers | Retain recursive option filtering using Core visibility exposed by Ordering. |
-| Built-ins | `src/react/inputs/entries` | Retain the published Form Palette `InputField` variants as default descriptors while allowing complete host registry replacement. |
-| Custom inputs | legacy registry/provider | Retain runtime registration and unregistration with typed component, cardinality, change-value, and selected-option adapters. |
-| Submission | form context and order-flow provider | Form Palette validates mounted inputs; Ordering constructs snapshots. Structured Ordering failures pass through unchanged and never become valid submissions. |
+This adapter preserves the complete useful Form Palette and Wrapper experience while delegating headless ordering semantics to DGP Ordering. Canonical contracts replace legacy APIs; they do not justify a thinner integration.
 
-Retired: legacy Wrapper exports, compatibility selection tokens, direct order-flow
-ownership, duplicate visibility/quantity/service logic, Studio metadata, and
-frontend pricing decisions.
+| Legacy behavior | Legacy evidence | Destination | Preserved outcome | Implementation status | Tests/evidence | Explicit approval |
+| --- | --- | --- | --- | --- | --- | --- |
+| Form lifetime | `src/react/inputs/form-context.tsx` and tests | DGP Ordering Form Palette | Preserve Form Palette persistence, mounted/unmounted values, validation, subscriptions, programmatic access, and submission through supported `Form`/`useCore` APIs. | Partially implemented; real lifecycle integration pending | Current provider test is mocked; real Form Palette tests and legacy form-context cases pending | Not required—preserve |
+| Field bridge | `src/react/inputs/wrapper.tsx` and tests | DGP Ordering Form Palette | Preserve `useField` registration, values, selected options, required/disabled state, errors, refs, and descriptor-controlled prop mapping while writing Ordering state canonically. | Partially implemented; errors, refs, adapter prop mapping, and full field lifecycle pending | Current click bridge test; legacy Wrapper cases pending | Not required—preserve |
+| Descriptor variants and UI metadata | legacy registry and entries | DGP Ordering Form Palette | Preserve kind/variant fallback, default props, UI metadata, option capabilities, multi capabilities, and field-to-input prop adaptation. | Pending migration beyond basic type/cardinality registry | Legacy registry and entry tests require replacement | Not required—preserve |
+| Safe templating | legacy Wrapper templating helpers/tests | DGP Ordering Form Palette | Preserve safe deep templating of default and host-supplied props with field, flow, value, error, and host context. | Pending migration | Legacy Wrapper templating evidence requires explicit tests | Not required—preserve |
+| Visible recursive options | Wrapper and Core option helpers/tests | DGP Ordering Form Palette using Ordering/Core results | Preserve ancestor-retaining option filtering and prevent hidden options from remaining selected. | Basic filtering implemented; recursive integration parity pending | Current bridge test; legacy mode-aware option tests pending | Not required—preserve |
+| Built-in inputs | `src/react/inputs/entries` and registry tests | DGP Ordering Form Palette | Preserve published `InputField` variants and their appropriate adapters/defaults as replaceable built-in descriptors. | Type list implemented; per-input behavior and real rendering pending | Built-in smoke test only; legacy entry coverage pending | Not required—preserve |
+| Custom inputs and registries | legacy registry/provider/tests | DGP Ordering Form Palette | Preserve registration, unregistration, variants, custom components, cardinality, value mapping, selection mapping, and host replacement. | Partially implemented; full adapter contract pending | Current registry test; legacy custom registry tests pending | Not required—preserve |
+| Submission and failures | form context and order-flow provider/tests | DGP Ordering Form Palette and Ordering | Preserve Form Palette validation before snapshot construction and pass structured Ordering failures through unchanged. | Basic path implemented; real Form Palette validation/submission parity pending | Current mocked submission test; real integration cases pending | Not required—preserve |
+| Compatibility selection bag and legacy exports | legacy form context | DGP Ordering canonical state and clean-break boundary | Preserve actual selection behavior in Ordering state; do not reproduce obsolete duplicate storage or legacy export names. | Canonical replacement implemented; behavioral parity audit pending | Ordering selection tests and adapter integration tests pending | Approved representation/API clean break |
+
+Visibility, quantity, services, utilities, and snapshot semantics remain owned by Ordering and must not be duplicated here. Studio presentation remains owned by Studio. Those ownership moves are not behavioral retirements.

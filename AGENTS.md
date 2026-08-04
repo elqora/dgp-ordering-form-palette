@@ -28,6 +28,14 @@ This repository is the optional React integration between sibling `dgp-ordering`
 - Do not expose legacy Wrapper APIs, legacy wire fields, aliases, adapters, or compatibility modes. Preserve accepted UX behavior, not compatibility.
 - Surface Ordering's structured expression failures without converting them into valid submissions or snapshots.
 
+## Migration completeness
+
+- Preserve the complete useful Wrapper and Form Palette experience by default, including descriptor adapters, variants, value and selected-option mapping, errors, refs, disabled and required state, subscriptions, persistence, submission, safe templating, UI metadata, built-ins, and custom registries.
+- Re-express that behavior through canonical Ordering contracts without retaining legacy exports or wire formats. Separation from Ordering is not permission to narrow the adapter.
+- Test the real supported `@timeax/form-palette` APIs and lifecycle. Mock-only tests may isolate local behavior but cannot prove integration parity.
+- Port or replace applicable legacy Wrapper, form-context, registry, built-in input, and order-flow integration tests.
+- Mark missing behavior as **pending migration**. Redesign or retirement requires explicit recorded user approval; do not publish another stable release while relevant Wrapper behavior remains unclassified or unimplemented.
+
 ## Protocol lifecycle and operations
 
 - Spec owns shared representation, Ordering owns ordering behavior, and this adapter owns only Form Palette integration behavior.
@@ -35,7 +43,7 @@ This repository is the optional React integration between sibling `dgp-ordering`
 - Update this adapter only after affected Spec, Core/SDK, Validation, and Ordering changes. Commit and release it independently after Ordering.
 - The adapter may implement against ratified unreleased contracts, but stable releases require released versions of its protocol dependencies.
 - The package supports Node.js 22 or newer. Use `npm install`, `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`, and `npm run check:boundaries`; `npm run check` is the completion command.
-- No generated outputs are committed. Boundary checks must keep Form Palette and React here, prevent independently authored shared contracts, and preserve the one-way dependency on Ordering.
+- No generated outputs are committed. Boundary checks must keep Form Palette and React here, prevent independently authored shared contracts, and preserve the one-way dependency on Ordering; they do not establish Wrapper migration completeness.
 
 ## Evidence and references
 
