@@ -1,6 +1,6 @@
 {
   "name": "@elqora/dgp-ordering-form-palette",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Optional React and Form Palette integration for DGP Ordering.",
   "license": "GPL-3.0-only",
   "type": "module",
@@ -41,7 +41,7 @@
     "prepack": "npm run check"
   },
   "dependencies": {
-    "@elqora/dgp-ordering": "^1.0.0"
+    "@elqora/dgp-ordering": "^1.0.1"
   },
   "peerDependencies": {
     "@timeax/form-palette": "^0.2.2",
