@@ -41,10 +41,22 @@ const session = createOrderingSession(definition, "root");
 </FormPaletteOrderingProvider>
 ```
 
-`createDefaultFormPaletteRegistry()` supplies the standard `InputField`
-variants. Hosts can replace it or register custom descriptors. The
-`useOrderingField` hook bridges custom raw components through Form Palette's
-`useField` API.
+`createDefaultFormPaletteRegistry()` registers Form Palette's core variants and
+supplies the standard `InputField` descriptors, established defaults,
+capability declarations, and authoring UI metadata. Canonical field variants
+fall back to the descriptor's `default` variant; `palette_variant` independently
+selects the Form Palette renderer.
+
+Hosts can replace descriptors or register custom components. Use
+`field_binding: "component"` for a component such as `InputField` that owns its
+Form Palette field, or `field_binding: "wrapper"` for a raw component that must
+be registered by `useOrderingField`. Descriptor adapters can map value, change,
+error, selected-option, action-state, and field-derived props.
+
+`useFormPaletteForm()` provides programmatic `get`, `set`, `snapshot`,
+`subscribe`, error, and submit access. `OrderingInput` also supports safe deep
+templating for descriptor defaults and host props through provider and local
+template contexts.
 
 `useFormPaletteOrderSubmission()` first runs Form Palette validation and then
 delegates snapshot construction to Ordering. Expression and host-configuration

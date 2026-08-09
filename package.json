@@ -38,10 +38,11 @@
     "test": "vitest run",
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "check": "npm run lint && npm run typecheck && npm run test && npm run check:boundaries && npm run build",
+    "prepare": "npm run build",
     "prepack": "npm run check"
   },
   "dependencies": {
-    "@elqora/dgp-ordering": "^1.0.1"
+    "@elqora/dgp-ordering": "github:elqora/dgp-ordering#1f1b441"
   },
   "peerDependencies": {
     "@timeax/form-palette": "^0.2.2",

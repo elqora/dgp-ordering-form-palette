@@ -9,10 +9,11 @@ type ProductField = Parameters<ComponentAdapter<unknown>["create"]>[0];
 type JsonValue = OrderingInputState["values"][string];
 
 export function useOrderingField(field: ProductField, disabled = false): UseFieldReturn<JsonValue> {
-  const { session, state } = useFormPaletteOrdering();
+  const { session, state, registry } = useFormPaletteOrdering();
+  const descriptor = registry.resolve(field.type, field.variant);
   return useField<JsonValue>({
     name: field.id,
-    variant: field.type as VariantKey,
+    variant: (descriptor?.palette_variant ?? field.type) as VariantKey,
     required: field.required === true,
     disabled,
     value: state.values[field.id] ?? field.default_value ?? null,
