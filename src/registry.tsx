@@ -183,7 +183,7 @@ const builtInDefaults: Partial<Record<(typeof BUILT_IN_INPUT_TYPES)[number], Rec
   date: { mode: "single", kind: "date", clearable: true },
   color: { showPreview: true, showPickerToggle: true, previewSize: 18 },
   checkbox: { single: true, tristate: false, size: "md" },
-  "toggle-group": { multiple: false, variantStyle: "default", layout: "horizontal", gridCols: 2, fillWidth: false, autoCap: false },
+  "toggle-group": { multiple: false, design: "default", layout: "horizontal", gridCols: 2, fillWidth: false, autoCap: false },
   radio: { autoCap: false },
   select: { searchable: true, clearable: true, autoCap: false, joinControls: true },
   multiselect: { searchable: true, clearable: true, autoCap: false, joinControls: true },
@@ -202,29 +202,27 @@ const commonUiKeys = [
 ] as const;
 
 const variantUiKeys: Partial<Record<(typeof BUILT_IN_INPUT_TYPES)[number], readonly string[]>> = {
-  text: ["trim", "stripPrefix", "stripSuffix", "slotChar", "mask", "prefix", "suffix", "joinControls", "extendBoxToControls", "px", "py", "ps", "pe", "pt", "pb"],
-  textarea: ["autoResize", "minRows", "maxRows", "rows", "resize", "px", "py", "ps", "pe", "pt", "pb"],
+  text: ["stripPrefix", "stripSuffix", "slotChar", "mask", "prefix", "suffix", "joinControls", "extendBoxToControls", "px", "py", "ps", "pe", "pt", "pb"],
+  textarea: ["autoResize", "maxRows", "rows", "px", "py", "ps", "pe", "pt", "pb"],
   phone: ["defaultCountry", "showCountry", "showFlag", "showSelectedLabel", "showSelectedDial", "showDialInList", "px", "py", "ps", "pe", "pt", "pb"],
   number: ["mode", "min", "max", "step", "useGrouping", "format", "allowEmpty", "currency", "locale", "px", "py", "ps", "pe", "pt", "pb"],
   password: ["revealToggle", "meterStyle", "minLength", "requireUppercase", "requireLowercase", "requireNumber", "requireSymbol", "px", "py", "ps", "pe", "pt", "pb"],
   slider: ["min", "max", "step", "showValue", "valuePlacement", "joinControls", "extendBoxToControls"],
-  toggle: ["controlPlacement", "onLabel", "offLabel"],
-  "toggle-group": ["options", "multiple", "variantStyle", "layout", "gridCols", "fillWidth", "autoCap"],
-  treeselect: ["options", "multiple", "searchable", "searchPlaceholder", "emptySearchText", "clearable", "expandAll", "leafOnly", "optionLabel", "optionValue", "optionChildren", "optionDisabled"],
+  toggle: ["controlPlacement", "onText", "offText"],
+  "toggle-group": ["options", "multiple", "design", "layout", "gridCols", "fillWidth", "autoCap"],
+  treeselect: ["options", "multiple", "searchable", "searchPlaceholder", "emptySearchText", "clearable", "expandAll", "leafOnly", "optionLabel", "optionValue", "optionDisabled"],
   multiselect: ["options", "searchable", "searchPlaceholder", "emptySearchText", "clearable", "autoCap", "optionLabel", "optionValue", "optionDisabled", "optionDescription", "joinControls"],
   select: ["options", "searchable", "searchPlaceholder", "emptySearchText", "clearable", "autoCap", "optionLabel", "optionValue", "optionDisabled", "optionDescription", "joinControls"],
   radio: ["options", "autoCap", "optionLabel", "optionValue", "optionDisabled", "optionDescription", "layout", "columns"],
   checkbox: ["single", "tristate", "options", "layout", "columns", "itemGapPx"],
-  chips: ["addOnEnter", "addOnTab", "addOnBlur", "allowDuplicates", "backspaceRemovesLast", "max", "separator"],
-  color: ["showPreview", "showPickerToggle", "previewSize", "format", "px", "py", "ps", "pe", "pt", "pb"],
-  date: ["mode", "kind", "clearable", "min", "max", "format", "locale", "px", "py", "ps", "pe", "pt", "pb"],
-  file: ["multiple", "accept", "mergeMode", "showDropArea", "showCheckboxes", "custom", "maxFiles", "maxSize"],
-  editor: ["height", "previewStyle", "editType", "useCommandShortcut", "valueFormat"],
-  "json-editor": ["height", "mode", "indent", "sortKeys"],
-  keyvalue: ["min", "max", "keyPlaceholder", "valuePlaceholder", "allowDuplicateKeys"],
+  chips: ["addOnEnter", "addOnTab", "addOnBlur", "allowDuplicates", "backspaceRemovesLast", "maxChips", "separators"],
+  color: ["showPreview", "showPickerToggle", "previewSize", "px", "py", "ps", "pe", "pt", "pb"],
+  date: ["mode", "kind", "clearable", "formatSingle", "formatRange", "locale", "px", "py", "ps", "pe", "pt", "pb"],
+  file: ["multiple", "accept", "mergeMode", "showDropArea", "showCheckboxes", "custom", "maxFiles"],
+  editor: ["height", "previewStyle", "editType", "useCommandShortcut", "format"],
+  "json-editor": ["mode"],
+  keyvalue: ["min", "max", "keyPlaceholder", "valuePlaceholder"],
   lister: ["mode", "searchable", "clearable", "pageSize", "valueKey", "labelKey", "disabledKey"],
-  icon: ["icons", "searchable", "clearable", "columns", "iconSize"],
-  "image-icon": ["images", "searchable", "clearable", "columns", "imageSize"],
 };
 
 function title(key: string): string {
@@ -232,11 +230,123 @@ function title(key: string): string {
     .replace(/^./, (letter) => letter.toUpperCase());
 }
 
+type UiPropertySchema = Record<string, unknown>;
+
+function stringProperty(variant?: string): UiPropertySchema {
+  return { type: "string", ...(variant === undefined ? {} : { variant }) };
+}
+
+function numberProperty(): UiPropertySchema {
+  return { type: "number" };
+}
+
+function booleanProperty(): UiPropertySchema {
+  return { type: "boolean" };
+}
+
+function choiceProperty(values: readonly (string | number)[]): UiPropertySchema {
+  return { type: "anyOf", items: values.map((value) => ({ value, title: String(value) })) };
+}
+
+const stringKeys = [
+  "sublabel", "description", "helpText", "slotChar", "mask", "prefix", "suffix",
+  "defaultCountry", "currency", "locale", "onText", "offText", "searchPlaceholder",
+  "emptySearchText", "optionLabel", "optionValue", "optionDisabled", "optionDescription",
+  "keyPlaceholder", "valuePlaceholder", "valueKey", "labelKey", "disabledKey", "height",
+  "formatSingle", "formatRange", "accept",
+] as const;
+const booleanKeys = [
+  "disabled", "readOnly", "inline", "fullWidth", "stripPrefix", "stripSuffix", "joinControls",
+  "extendBoxToControls", "autoResize", "showCountry", "showFlag", "showSelectedLabel",
+  "showSelectedDial", "showDialInList", "useGrouping", "format", "allowEmpty", "revealToggle",
+  "requireUppercase", "requireLowercase", "requireNumber", "requireSymbol", "showValue",
+  "multiple", "fillWidth", "autoCap", "searchable", "clearable", "expandAll", "leafOnly",
+  "single", "tristate", "addOnEnter", "addOnTab", "addOnBlur", "allowDuplicates",
+  "backspaceRemovesLast", "showPreview", "showPickerToggle", "showDropArea", "showCheckboxes",
+  "custom", "useCommandShortcut",
+] as const;
+const numberKeys = [
+  "px", "py", "ps", "pe", "pt", "pb", "maxRows", "rows", "min", "max", "step",
+  "minLength", "gridCols", "columns", "itemGapPx", "maxChips", "previewSize", "maxFiles",
+  "pageSize",
+] as const;
+const choiceValues: Record<string, readonly (string | number)[]> = {
+  labelPlacement: ["top", "left", "right", "hidden"],
+  sublabelPlacement: ["left", "right", "above", "below", "hidden"],
+  descriptionPlacement: ["left", "right", "above", "below", "hidden"],
+  helpTextPlacement: ["left", "right", "above", "below", "hidden"],
+  errorTextPlacement: ["left", "right", "above", "below", "hidden"],
+  tagPlacement: ["left", "right", "above", "below", "hidden"],
+  size: ["sm", "md", "lg"],
+  density: ["compact", "comfortable", "loose"],
+  mode: ["decimal", "currency", "single", "range", "accordion", "popover", "multiple"],
+  meterStyle: ["simple", "rules"],
+  valuePlacement: ["start", "end"],
+  controlPlacement: ["left", "right"],
+  design: ["default", "outline"],
+  layout: ["horizontal", "vertical", "grid", "list"],
+  kind: ["date", "datetime", "time", "hour", "monthYear", "year"],
+  mergeMode: ["append", "replace"],
+  previewStyle: ["vertical", "tab"],
+  editType: ["wysiwyg", "markdown"],
+  format: ["html", "markdown"],
+};
+
+function propertySchema(key: string, inputType: (typeof BUILT_IN_INPUT_TYPES)[number]): UiPropertySchema {
+  if (key === "tags") {
+    return {
+      type: "array",
+      item: {
+        type: "object",
+        fields: {
+          label: stringProperty(),
+          className: stringProperty(),
+          color: stringProperty("color"),
+          bgColor: stringProperty("color"),
+        },
+      },
+    };
+  }
+  if (key === "density") {
+    return choiceProperty(inputType === "toggle"
+      ? ["default", "dense"]
+      : inputType === "textarea"
+        ? ["compact", "normal", "relaxed", "dense", "loose"]
+        : ["compact", "comfortable", "loose"]);
+  }
+  if (key === "mode") {
+    const values = inputType === "number" ? ["decimal", "currency"]
+      : inputType === "date" ? ["single", "range"]
+        : inputType === "json-editor" ? ["accordion", "popover"]
+          : ["single", "multiple"];
+    return choiceProperty(values);
+  }
+  if (key === "layout") {
+    return choiceProperty(inputType === "radio" || inputType === "checkbox"
+      ? ["list", "grid"]
+      : ["horizontal", "vertical", "grid"]);
+  }
+  if (key === "format") {
+    return inputType === "number" ? booleanProperty() : choiceProperty(["html", "markdown"]);
+  }
+  if (["design", "kind", "mergeMode", "meterStyle", "previewStyle", "editType", "valuePlacement", "controlPlacement"].includes(key)) {
+    return choiceProperty(choiceValues[key] ?? []);
+  }
+  if (["labelPlacement", "sublabelPlacement", "descriptionPlacement", "helpTextPlacement", "errorTextPlacement", "tagPlacement", "size"].includes(key)) {
+    return choiceProperty(choiceValues[key] ?? []);
+  }
+  if (key === "separators") return { type: "array", item: { type: "string" } };
+  if ((stringKeys as readonly string[]).includes(key)) return stringProperty();
+  if ((booleanKeys as readonly string[]).includes(key)) return booleanProperty();
+  if ((numberKeys as readonly string[]).includes(key)) return numberProperty();
+  if (key === "options") return { type: "array", item: { type: "object", fields: {} } };
+  throw new Error(`Missing Form Palette UI metadata schema for ${inputType}.${key}.`);
+}
+
 function uiMetadata(type: (typeof BUILT_IN_INPUT_TYPES)[number]): Record<string, Record<string, unknown>> {
   const keys = [...commonUiKeys, ...(variantUiKeys[type] ?? [])];
   return Object.fromEntries([...new Set(keys)].map((key) => [key, {
-    type: ["disabled", "readOnly", "inline", "fullWidth", "clearable", "searchable", "multiple", "tristate"].includes(key)
-      ? "boolean" : "any",
+    ...propertySchema(key, type),
     label: title(key),
     description: `Form Palette ${type} property: ${key}.`,
   }]));

@@ -58,6 +58,13 @@ error, selected-option, action-state, and field-derived props.
 templating for descriptor defaults and host props through provider and local
 template contexts.
 
+Pass `snapshot_options` to `FormPaletteOrderingProvider` to include a live
+Ordering-built snapshot in input templates. Templates can read
+`{snapshot.quantity}` and other snapshot fields after customer input is
+valid. `snapshot` is undefined while input is invalid; use
+`snapshot_result` to inspect customer-input or host-configuration
+failures. The value is rebuilt when Ordering state changes.
+
 `useFormPaletteOrderSubmission()` first runs Form Palette validation and then
 delegates snapshot construction to Ordering. Expression and host-configuration
 failures are returned unchanged, and no snapshot is returned after failure.

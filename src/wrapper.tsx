@@ -103,7 +103,7 @@ function InputView({
   template_strings: templateStrings = true,
   template_context: localTemplateContext = {},
 }: InputViewProps): React.ReactElement {
-  const { session, state, definition, template_context: providerTemplateContext } = useFormPaletteOrdering();
+  const { session, state, definition, snapshot, snapshot_result: snapshotResult, template_context: providerTemplateContext } = useFormPaletteOrdering();
   const context = session.get_context();
   const allowedIds = context?.visibility.optionsByFieldId[field.id];
   const renderedOptions = filterOptions(field.options, allowedIds === undefined ? undefined : new Set(allowedIds));
@@ -149,6 +149,8 @@ function InputView({
     definition,
     ordering: context,
     state,
+    snapshot,
+    snapshot_result: snapshotResult,
     value: currentValue,
     error: fieldBinding?.error ?? "",
   };

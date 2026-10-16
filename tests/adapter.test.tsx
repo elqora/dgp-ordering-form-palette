@@ -91,7 +91,25 @@ describe("Form Palette descriptor registry", () => {
     expect(registry.resolve("multiselect")).toMatchObject({ palette_variant: "multi-select" });
     expect(registry.resolve("chips")).toMatchObject({ cardinality: "scalar", options: false });
     expect(registry.resolve("text")?.ui).toMatchObject({
-      sublabel: { label: "Sublabel" }, trim: { label: "Trim" }, fullWidth: { label: "Full Width" },
+      sublabel: { type: "string", label: "Sublabel" },
+      fullWidth: { type: "boolean", label: "Full Width" },
+      joinControls: { type: "boolean" },
+      extendBoxToControls: { type: "boolean" },
+      labelPlacement: { type: "anyOf", items: [{ value: "top" }, { value: "left" }, { value: "right" }, { value: "hidden" }] },
+      density: { type: "anyOf", items: [{ value: "compact" }, { value: "comfortable" }, { value: "loose" }] },
+      tags: {
+        type: "array",
+        item: { type: "object", fields: {
+          label: { type: "string" }, className: { type: "string" },
+          color: { type: "string", variant: "color" }, bgColor: { type: "string", variant: "color" },
+        } },
+      },
+    });
+    expect(registry.resolve("chips")?.ui).toMatchObject({
+      maxChips: { type: "number" }, separators: { type: "array", item: { type: "string" } },
+    });
+    expect(registry.resolve("editor")?.ui).toMatchObject({
+      format: { type: "anyOf", items: [{ value: "html" }, { value: "markdown" }] },
     });
   });
 
@@ -177,6 +195,34 @@ describe("OrderingInput", () => {
     });
     fireEvent.click(screen.getByTestId("custom"));
     expect(session.store.get()).toMatchObject({ values: { package: "premium" }, selections: { package: ["premium"] } });
+  });
+
+  it("provides the live OrderSnapshot and build result to template contexts", () => {
+    const product = definition();
+    product.fields = [{ id: "name", name: "name", type: "text", label: "Name", bind_id: "root", required: true }];
+    const seen: Record<string, unknown>[] = [];
+    const descriptor = createFormPaletteDescriptor("text", "scalar", {
+      snapshotVersion: "{snapshot.version}",
+      snapshotQuantity: "{snapshot.quantity}",
+      snapshotInput: "{snapshot.inputs.form.name}",
+      snapshotStatus: "{snapshot_result.kind}",
+    }, {
+      Component: (props) => { seen.push(props); return <div />; }, field_binding: "wrapper",
+    });
+    const session = createOrderingSession(product, "root");
+    render(
+      <FormPaletteOrderingProvider
+        session={session}
+        definition={product}
+        snapshot_options={{ filter_id: "root", services: [] }}
+        registry={createFormPaletteInputRegistry([descriptor])}
+      >
+        <OrderingInput field={firstField(product)} />
+      </FormPaletteOrderingProvider>,
+    );
+    expect(seen.at(-1)).toMatchObject({ snapshotVersion: "", snapshotQuantity: "", snapshotInput: "", snapshotStatus: "customer_input" });
+    act(() => session.set_value("name", "Ada"));
+    expect(seen.at(-1)).toMatchObject({ snapshotVersion: "1", snapshotQuantity: "1", snapshotInput: "Ada", snapshotStatus: "", value: "Ada" });
   });
 
   it("retains ancestors while filtering recursive visible options", () => {

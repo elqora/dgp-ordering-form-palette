@@ -2,12 +2,14 @@
 
 import * as React from "react";
 import { Form, useCore, type CoreContext, type Dict } from "@timeax/form-palette";
-import type { BuildOrderSnapshotOptions, OrderingInputState, OrderingSession } from "@elqora/dgp-ordering";
+import { buildOrderSnapshot, type BuildOrderSnapshotOptions, type BuildOrderSnapshotResult, type OrderingInputState, type OrderingSession } from "@elqora/dgp-ordering";
 
 import { createDefaultFormPaletteRegistry, type FormPaletteInputRegistry } from "./registry.js";
 
 type Definition = BuildOrderSnapshotOptions["definition"];
+type SnapshotOptions = Omit<BuildOrderSnapshotOptions, "definition" | "state">;
 type JsonValue = OrderingInputState["values"][string];
+type OrderSnapshot = Extract<BuildOrderSnapshotResult, { ok: true }>["snapshot"];
 
 export interface FormPaletteFormApi {
   get(field_id: string): unknown;
@@ -25,6 +27,8 @@ export interface FormPaletteOrderingContextValue {
   core_ref: React.MutableRefObject<CoreContext<Dict> | null>;
   state: Readonly<OrderingInputState>;
   definition?: Definition;
+  snapshot?: OrderSnapshot;
+  snapshot_result?: BuildOrderSnapshotResult;
   template_context: Readonly<Record<string, unknown>>;
   form: FormPaletteFormApi;
 }
@@ -54,6 +58,8 @@ export interface FormPaletteOrderingProviderProps {
   session: OrderingSession;
   /** Supplies the full authored definition to descriptor field adapters and templates. */
   definition?: Definition;
+  /** Build a live OrderSnapshot for templates from the current Ordering state. */
+  snapshot_options?: SnapshotOptions;
   registry?: FormPaletteInputRegistry;
   children: React.ReactNode;
   form_props?: Record<string, unknown>;
@@ -63,6 +69,7 @@ export interface FormPaletteOrderingProviderProps {
 export function FormPaletteOrderingProvider({
   session,
   definition,
+  snapshot_options: snapshotOptions,
   registry: suppliedRegistry,
   children,
   form_props: formProps = {},
@@ -74,6 +81,13 @@ export function FormPaletteOrderingProvider({
   const getSnapshot = React.useCallback(() => session.store.get(), [session]);
   const state = React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   const valueBag = React.useMemo(() => ({ ...state.values }), [state.values]);
+  const orderSnapshotResult = React.useMemo(
+    () => definition === undefined || snapshotOptions === undefined
+      ? undefined
+      : buildOrderSnapshot({ ...snapshotOptions, definition, state }),
+    [definition, snapshotOptions, state],
+  );
+  const orderSnapshot = orderSnapshotResult?.ok === true ? orderSnapshotResult.snapshot : undefined;
 
   const form = React.useMemo<FormPaletteFormApi>(() => ({
     get(fieldId) {
@@ -102,9 +116,11 @@ export function FormPaletteOrderingProvider({
     core_ref: coreRef,
     state,
     ...(definition === undefined ? {} : { definition }),
+    ...(orderSnapshot === undefined ? {} : { snapshot: orderSnapshot }),
+    ...(orderSnapshotResult === undefined ? {} : { snapshot_result: orderSnapshotResult }),
     template_context: templateContext,
     form,
-  }), [definition, form, registry, session, state, templateContext]);
+  }), [definition, form, orderSnapshot, orderSnapshotResult, registry, session, state, templateContext]);
 
   const onChange = React.useCallback((formCore: CoreContext<Dict>, current: { name?: string }): void => {
     if (current.name === undefined || current.name === "") return;
