@@ -2,7 +2,16 @@
 
 import * as React from "react";
 import { Form, useCore, type CoreContext, type Dict } from "@timeax/form-palette";
-import { buildOrderSnapshot, type BuildOrderSnapshotOptions, type BuildOrderSnapshotResult, type OrderingInputState, type OrderingSession } from "@elqora/dgp-ordering";
+import {
+  buildOrderSnapshot,
+  createBrowserJavaScriptExpressionExecutor,
+  validateCustomerInput,
+  type BuildOrderSnapshotOptions,
+  type BuildOrderSnapshotResult,
+  type CustomerValidationResult,
+  type OrderingInputState,
+  type OrderingSession,
+} from "@elqora/dgp-ordering";
 
 import { createDefaultFormPaletteRegistry, type FormPaletteInputRegistry } from "./registry.js";
 
@@ -32,6 +41,9 @@ export interface FormPaletteOrderingContextValue {
   template_context: Readonly<Record<string, unknown>>;
   field_errors: Readonly<Record<string, React.ReactNode>>;
   field_error_messages: Readonly<Record<string, string>>;
+  ordering_errors: Readonly<Record<string, React.ReactNode>>;
+  validation_result?: CustomerValidationResult;
+  mark_field_edited: (field_id: string) => void;
   form: FormPaletteFormApi;
 }
 
@@ -84,7 +96,49 @@ export function FormPaletteOrderingProvider({
   const state = React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, React.ReactNode>>({});
   const [fieldErrorMessages, setFieldErrorMessages] = React.useState<Record<string, string>>({});
+  const [editedFieldIds, setEditedFieldIds] = React.useState<ReadonlySet<string>>(() => new Set());
+  const [submitAttempted, setSubmitAttempted] = React.useState(false);
+  const markFieldEdited = React.useCallback((fieldId: string): void => {
+    setEditedFieldIds((current) => current.has(fieldId) ? current : new Set([...current, fieldId]));
+  }, []);
   const valueBag = React.useMemo(() => ({ ...state.values }), [state.values]);
+  const filterId = session.get_filter_id();
+  const triggerIds = session.get_trigger_ids();
+  const validationResult = React.useMemo(
+    () => definition === undefined
+      ? undefined
+      : validateCustomerInput(
+        definition,
+        filterId,
+        state,
+        triggerIds,
+        snapshotOptions?.expression_executor ?? createBrowserJavaScriptExpressionExecutor(),
+        snapshotOptions?.mode ?? "prod",
+      ),
+    [definition, filterId, snapshotOptions?.expression_executor, snapshotOptions?.mode, state, triggerIds],
+  );
+  const orderingErrors = React.useMemo<Readonly<Record<string, React.ReactNode>>>(() => {
+    if (definition === undefined || validationResult?.ok !== false || validationResult.kind !== "customer_input") return {};
+    const messagesByField = new Map<string, string[]>();
+    for (const issue of validationResult.issues) {
+      const rule = issue.rule_index === null
+        ? undefined
+        : definition.fields.find((field) => field.id === issue.field_id)?.validation?.[issue.rule_index];
+      const shouldShow = submitAttempted || (rule?.error_message_on === "change" && editedFieldIds.has(issue.field_id));
+      if (!shouldShow) continue;
+      const messages = messagesByField.get(issue.field_id) ?? [];
+      messages.push(issue.message);
+      messagesByField.set(issue.field_id, messages);
+    }
+    return Object.fromEntries([...messagesByField].map(([fieldId, messages]) => [
+      fieldId,
+      React.createElement(
+        "div",
+        { role: "alert" },
+        React.createElement("ul", null, messages.map((message, index) => React.createElement("li", { key: `${index}:${message}` }, message))),
+      ),
+    ]));
+  }, [definition, editedFieldIds, submitAttempted, validationResult]);
   const orderSnapshotResult = React.useMemo(
     () => definition === undefined || snapshotOptions === undefined
       ? undefined
@@ -107,6 +161,7 @@ export function FormPaletteOrderingProvider({
     },
     subscribe(listener) { return session.store.subscribe(listener); },
     submit() {
+      setSubmitAttempted(true);
       const submitted = coreRef.current?.submit();
       return submitted ?? { values: {}, valid: false };
     },
@@ -207,14 +262,18 @@ export function FormPaletteOrderingProvider({
     template_context: templateContext,
     field_errors: fieldErrors,
     field_error_messages: fieldErrorMessages,
+    ordering_errors: orderingErrors,
+    ...(validationResult === undefined ? {} : { validation_result: validationResult }),
+    mark_field_edited: markFieldEdited,
     form,
-  }), [definition, fieldErrorMessages, fieldErrors, form, orderSnapshot, orderSnapshotResult, registry, session, state, templateContext]);
+  }), [definition, fieldErrorMessages, fieldErrors, form, markFieldEdited, orderSnapshot, orderSnapshotResult, orderingErrors, registry, session, state, templateContext, validationResult]);
 
   const onChange = React.useCallback((formCore: CoreContext<Dict>, current: { name?: string }): void => {
     if (current.name === undefined || current.name === "") return;
     const value = formCore.values()[current.name];
+    markFieldEdited(current.name);
     session.set_value(current.name, (value ?? null) as JsonValue);
-  }, [session]);
+  }, [markFieldEdited, session]);
 
   return (
     <AdapterContext.Provider value={context}>

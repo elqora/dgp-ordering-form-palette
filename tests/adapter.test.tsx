@@ -355,6 +355,59 @@ describe("OrderingInput", () => {
 });
 
 describe("real Form Palette form bridge", () => {
+  it("keeps required-field issues quiet until submit", async () => {
+    const product = definition();
+    product.fields = [{ id: "name", type: "text", label: "Name", bind_id: "root", required: true }];
+    const session = createOrderingSession(product, "root");
+    let api: ReturnType<typeof useFormPaletteForm> | undefined;
+    function Probe(): null { api = useFormPaletteForm(); return null; }
+
+    render(
+      <FormPaletteOrderingProvider session={session} definition={product}>
+        <OrderingInput field={firstField(product)} />
+        <Probe />
+      </FormPaletteOrderingProvider>,
+    );
+
+    expect(screen.queryByText("Name is required.")).toBeNull();
+    act(() => { api?.submit(); });
+    expect(await screen.findByText("Name is required.")).toBeTruthy();
+  });
+
+  it("shows change-timed rule errors after first edit and all remaining failures after submit", async () => {
+    const product = definition();
+    product.fields = [{
+      id: "quantity", type: "number", label: "Quantity", bind_id: "root",
+      validation: [
+        { op: "gte", value: 10, error_message_on: "change", message: "Quantity must be at least 10." },
+        { op: "lte", value: 5, error_message_on: "change", message: "Quantity must be at most 5." },
+        { op: "eq", value: 0, message: "Quantity must be zero." },
+      ],
+    }];
+    const session = createOrderingSession(product, "root", { values: { quantity: 7 }, selections: {} });
+    let api: ReturnType<typeof useFormPaletteForm> | undefined;
+    let ordering: ReturnType<typeof useFormPaletteOrdering> | undefined;
+    function Probe(): null { api = useFormPaletteForm(); ordering = useFormPaletteOrdering(); return null; }
+
+    render(
+      <FormPaletteOrderingProvider session={session} definition={product}>
+        <OrderingInput field={firstField(product)} />
+        <Probe />
+      </FormPaletteOrderingProvider>,
+    );
+
+    expect(screen.queryByText("Quantity must be at least 10.")).toBeNull();
+    expect(ordering?.validation_result).toMatchObject({ ok: false, kind: "customer_input" });
+    fireEvent.change(screen.getByRole("spinbutton", { name: /Quantity/ }), { target: { value: "8" } });
+    await waitFor(() => expect(Object.keys(ordering?.ordering_errors ?? {})).toContain("quantity"));
+    expect(await screen.findByText("Quantity must be at least 10.")).toBeTruthy();
+    expect(screen.getByText("Quantity must be at most 5.")).toBeTruthy();
+    expect(screen.queryByText("Quantity must be zero.")).toBeNull();
+
+    act(() => { api?.submit(); });
+    expect(await screen.findByText("Quantity must be zero.")).toBeTruthy();
+  });
+
   it("maps wrapper-bound refs, errors, required, and disabled state into a raw custom component", async () => {
     const product = definition();
     product.fields = [{ id: "name", type: "custom", label: "Name", bind_id: "root", required: true }];

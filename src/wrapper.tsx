@@ -106,7 +106,7 @@ function InputView({
   template_strings: templateStrings = true,
   template_context: localTemplateContext = {},
 }: InputViewProps): React.ReactElement {
-  const { session, state, definition, snapshot, snapshot_result: snapshotResult, template_context: providerTemplateContext, field_errors: fieldErrors, field_error_messages: fieldErrorMessages } = useFormPaletteOrdering();
+  const { session, state, definition, snapshot, snapshot_result: snapshotResult, template_context: providerTemplateContext, field_errors: fieldErrors, field_error_messages: fieldErrorMessages, ordering_errors: orderingErrors, mark_field_edited: markFieldEdited } = useFormPaletteOrdering();
   const context = session.get_context();
   const allowedIds = context?.visibility.optionsByFieldId[field.id];
   const renderedOptions = filterOptions(field.options, allowedIds === undefined ? undefined : new Set(allowedIds));
@@ -129,6 +129,7 @@ function InputView({
   const onChange = (change: unknown): void => {
     const value = adapter.get_value?.(change, currentValue, adapterContext)
       ?? (typeof change === "object" && change !== null && "value" in change ? change.value : change);
+    markFieldEdited(field.id);
     fieldBinding?.setValue((value ?? null) as JsonValue);
     session.set_value(field.id, (value ?? null) as JsonValue);
     if (field.options !== undefined) {
@@ -182,15 +183,18 @@ function InputView({
   hostProps[changeProp] = onChange;
   const hasRichFieldError = Object.prototype.hasOwnProperty.call(fieldErrors, field.id);
   const hasFieldErrorMessage = Object.prototype.hasOwnProperty.call(fieldErrorMessages, field.id);
+  const hasOrderingError = Object.prototype.hasOwnProperty.call(orderingErrors, field.id);
   const hasExplicitValidationError = validationError !== undefined;
   hostProps[errorProp] = hasExplicitValidationError
     ? validationError
-    : hasRichFieldError
+    : hasOrderingError
+      ? orderingErrors[field.id]
+      : hasRichFieldError
       ? fieldErrors[field.id]
       : hasFieldErrorMessage
         ? fieldErrorMessages[field.id]
         : fieldBinding?.error ?? "";
-  if ((hasExplicitValidationError && validationError !== null) || hasRichFieldError || hasFieldErrorMessage) hostProps["aria-invalid"] = true;
+  if ((hasExplicitValidationError && validationError !== null) || hasOrderingError || hasRichFieldError || hasFieldErrorMessage) hostProps["aria-invalid"] = true;
 
   return <div ref={fieldBinding?.ref as React.Ref<HTMLDivElement> | undefined} className={className}><Component {...hostProps} /></div>;
 }

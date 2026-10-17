@@ -63,6 +63,12 @@ templating for descriptor defaults and host props through provider and local
 template contexts. Hosts can pass `validation_error` directly to an
 `OrderingInput` to render rich React content in the descriptor's error slot.
 
+When `definition` is supplied to the provider, it validates the current
+Ordering state and exposes the structured result as `validation_result`.
+`error_message_on: "change"` rules display after their field is first edited;
+other rule messages wait until submit. A submit attempt displays all current
+validation failures for each field, grouped in a React node.
+
 Pass `snapshot_options` to `FormPaletteOrderingProvider` to include a live
 Ordering-built snapshot in input templates. Templates can read
 `{snapshot.quantity}` and other snapshot fields after customer input is
