@@ -42,7 +42,7 @@
     "prepack": "npm run check"
   },
   "dependencies": {
-    "@elqora/dgp-ordering": "github:elqora/dgp-ordering#1f1b441"
+    "@elqora/dgp-ordering": "github:elqora/dgp-ordering#b35a567"
   },
   "peerDependencies": {
     "@timeax/form-palette": "^0.2.2",
