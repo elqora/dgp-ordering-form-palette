@@ -161,6 +161,101 @@ describe("OrderingInput", () => {
     await waitFor(() => expect(session.store.get().values).toEqual({ name: "Ada" }));
   });
 
+  it("renders rich validation content in the Form Palette error slot and marks the field invalid", async () => {
+    const product = definition();
+    product.fields = [{ id: "quantity", type: "number", label: "Quantity", bind_id: "root" }];
+    const session = createOrderingSession(product, "root");
+    let api: ReturnType<typeof useFormPaletteForm> | undefined;
+    function Probe(): null { api = useFormPaletteForm(); return null; }
+
+    const view = render(
+      <FormPaletteOrderingProvider session={session} definition={product}>
+        <OrderingInput
+          field={firstField(product)}
+          validation_error={<ul><li>Quantity must be at least 10.</li><li>Quantity must be at most 20000.</li></ul>}
+        />
+        <Probe />
+      </FormPaletteOrderingProvider>,
+    );
+
+    act(() => api?.set_field_error("quantity", "Quantity must be at least 10."));
+    expect(await screen.findByText("Quantity must be at least 10.")).toBeTruthy();
+    expect(screen.getByText("Quantity must be at most 20000.")).toBeTruthy();
+    expect(screen.getByRole("spinbutton", { name: /Quantity/ }).getAttribute("aria-invalid")).toBe("true");
+
+    view.rerender(
+      <FormPaletteOrderingProvider session={session} definition={product}>
+        <OrderingInput field={firstField(product)} />
+        <Probe />
+      </FormPaletteOrderingProvider>,
+    );
+    act(() => api?.set_field_error("quantity", ""));
+    await waitFor(() => expect(screen.getByRole("spinbutton", { name: /Quantity/ }).getAttribute("aria-invalid")).not.toBe("true"));
+    expect(screen.queryByText("Quantity must be at most 20000.")).toBeNull();
+  });
+
+  it("accepts rich field errors through the form API and reveals an underlying string error when cleared", async () => {
+    const product = definition();
+    product.fields = [{ id: "quantity", type: "number", label: "Quantity", bind_id: "root" }];
+    const session = createOrderingSession(product, "root");
+    let api: ReturnType<typeof useFormPaletteForm> | undefined;
+    function Probe(): null { api = useFormPaletteForm(); return null; }
+
+    render(
+      <FormPaletteOrderingProvider session={session} definition={product}>
+        <OrderingInput field={firstField(product)} />
+        <Probe />
+      </FormPaletteOrderingProvider>,
+    );
+
+    act(() => api?.set_field_error("quantity", "Underlying Form Palette error."));
+    expect(await screen.findByText("Underlying Form Palette error.")).toBeTruthy();
+
+    act(() => api?.set_field_error("quantity", (
+      <ul>
+        <li>Quantity must be at least 10.</li>
+        <li>Quantity must be at most 20000.</li>
+      </ul>
+    )));
+    expect(await screen.findByText("Quantity must be at least 10.")).toBeTruthy();
+    expect(screen.getByText("Quantity must be at most 20000.")).toBeTruthy();
+    expect(screen.getByRole("spinbutton", { name: /Quantity/ }).getAttribute("aria-invalid")).toBe("true");
+
+    act(() => api?.set_field_error("quantity", null));
+    expect(await screen.findByText("Underlying Form Palette error.")).toBeTruthy();
+    expect(screen.queryByText("Quantity must be at most 20000.")).toBeNull();
+  });
+
+  it("applies rich error maps partially and clears only fields explicitly set to null", async () => {
+    const product = definition();
+    product.fields = [
+      { id: "quantity", type: "number", label: "Quantity", bind_id: "root" },
+      { id: "target", type: "text", label: "Target", bind_id: "root" },
+    ];
+    const session = createOrderingSession(product, "root");
+    let api: ReturnType<typeof useFormPaletteForm> | undefined;
+    function Probe(): null { api = useFormPaletteForm(); return null; }
+
+    render(
+      <FormPaletteOrderingProvider session={session} definition={product}>
+        {product.fields.map((field) => <OrderingInput key={field.id} field={field} />)}
+        <Probe />
+      </FormPaletteOrderingProvider>,
+    );
+
+    act(() => api?.set_errors({
+      quantity: <ul><li>Minimum is 10.</li><li>Maximum is 20000.</li></ul>,
+      target: <span>Enter a target URL.</span>,
+    }));
+    expect(await screen.findByText("Minimum is 10.")).toBeTruthy();
+    expect(screen.getByText("Maximum is 20000.")).toBeTruthy();
+    expect(screen.getByText("Enter a target URL.")).toBeTruthy();
+
+    act(() => api?.set_errors({ quantity: null }));
+    await waitFor(() => expect(screen.queryByText("Minimum is 10.")).toBeNull());
+    expect(screen.getByText("Enter a target URL.")).toBeTruthy();
+  });
+
   it("maps values, selected options, descriptor props, variants, and deep templates", () => {
     const product = definition();
     const productField = firstField(product);

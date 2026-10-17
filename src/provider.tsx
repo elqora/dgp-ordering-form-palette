@@ -17,8 +17,8 @@ export interface FormPaletteFormApi {
   snapshot(): Readonly<Record<string, unknown>>;
   subscribe(listener: () => void): () => void;
   submit(): { values: Dict; valid: boolean };
-  set_field_error(field_id: string, message: string): void;
-  set_errors(errors: Record<string, string>): void;
+  set_field_error(field_id: string, message: React.ReactNode): void;
+  set_errors(errors: Record<string, React.ReactNode>): void;
 }
 
 export interface FormPaletteOrderingContextValue {
@@ -30,6 +30,8 @@ export interface FormPaletteOrderingContextValue {
   snapshot?: OrderSnapshot;
   snapshot_result?: BuildOrderSnapshotResult;
   template_context: Readonly<Record<string, unknown>>;
+  field_errors: Readonly<Record<string, React.ReactNode>>;
+  field_error_messages: Readonly<Record<string, string>>;
   form: FormPaletteFormApi;
 }
 
@@ -80,6 +82,8 @@ export function FormPaletteOrderingProvider({
   const subscribe = React.useCallback((listener: () => void) => session.store.subscribe(listener), [session]);
   const getSnapshot = React.useCallback(() => session.store.get(), [session]);
   const state = React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const [fieldErrors, setFieldErrors] = React.useState<Record<string, React.ReactNode>>({});
+  const [fieldErrorMessages, setFieldErrorMessages] = React.useState<Record<string, string>>({});
   const valueBag = React.useMemo(() => ({ ...state.values }), [state.values]);
   const orderSnapshotResult = React.useMemo(
     () => definition === undefined || snapshotOptions === undefined
@@ -106,8 +110,90 @@ export function FormPaletteOrderingProvider({
       const submitted = coreRef.current?.submit();
       return submitted ?? { values: {}, valid: false };
     },
-    set_field_error(fieldId, message) { coreRef.current?.error(fieldId, message); },
-    set_errors(errors) { coreRef.current?.error(errors); },
+    set_field_error(fieldId, message) {
+      if (typeof message === "string") {
+        setFieldErrors((current) => {
+          if (!(fieldId in current)) return current;
+          const next = { ...current };
+          delete next[fieldId];
+          return next;
+        });
+        setFieldErrorMessages((current) => {
+          if (message === "") {
+            if (!(fieldId in current)) return current;
+            const next = { ...current };
+            delete next[fieldId];
+            return next;
+          }
+          return current[fieldId] === message ? current : { ...current, [fieldId]: message };
+        });
+        if (message === "") {
+          const field = coreRef.current?.getBind(fieldId);
+          if (field !== undefined) field.error = "";
+        } else {
+          coreRef.current?.error(fieldId, message);
+        }
+        return;
+      }
+      setFieldErrors((current) => {
+        if (message === null || message === undefined) {
+          if (!(fieldId in current)) return current;
+          const next = { ...current };
+          delete next[fieldId];
+          return next;
+        }
+        return current[fieldId] === message ? current : { ...current, [fieldId]: message };
+      });
+    },
+    set_errors(errors) {
+      const paletteErrors: Record<string, string> = {};
+      const clearMessageIds = Object.entries(errors)
+        .flatMap(([fieldId, message]) => typeof message === "string" && message === "" ? [fieldId] : []);
+      setFieldErrors((current) => {
+        let next = current;
+        for (const [fieldId, message] of Object.entries(errors)) {
+          if (typeof message === "string") {
+            if (fieldId in next) {
+              if (next === current) next = { ...current };
+              delete next[fieldId];
+            }
+            if (message !== "") paletteErrors[fieldId] = message;
+          } else if (message === null || message === undefined) {
+            if (fieldId in next) {
+              if (next === current) next = { ...current };
+              delete next[fieldId];
+            }
+          } else {
+            if (next[fieldId] !== message) {
+              if (next === current) next = { ...current };
+              next[fieldId] = message;
+            }
+          }
+        }
+        return next;
+      });
+      setFieldErrorMessages((current) => {
+        let next = current;
+        for (const [fieldId, message] of Object.entries(errors)) {
+          if (typeof message !== "string") continue;
+          if (message === "") {
+            if (fieldId in next) {
+              if (next === current) next = { ...current };
+              delete next[fieldId];
+            }
+          } else if (next[fieldId] !== message) {
+            if (next === current) next = { ...current };
+            next[fieldId] = message;
+          }
+        }
+        return next;
+      });
+      for (const fieldId of clearMessageIds) {
+        const field = coreRef.current?.getBind(fieldId);
+        if (field !== undefined) field.error = "";
+      }
+      if (Object.keys(paletteErrors).length > 0) coreRef.current?.error(paletteErrors);
+    },
   }), [session]);
 
   const context = React.useMemo<FormPaletteOrderingContextValue>(() => ({
@@ -119,8 +205,10 @@ export function FormPaletteOrderingProvider({
     ...(orderSnapshot === undefined ? {} : { snapshot: orderSnapshot }),
     ...(orderSnapshotResult === undefined ? {} : { snapshot_result: orderSnapshotResult }),
     template_context: templateContext,
+    field_errors: fieldErrors,
+    field_error_messages: fieldErrorMessages,
     form,
-  }), [definition, form, orderSnapshot, orderSnapshotResult, registry, session, state, templateContext]);
+  }), [definition, fieldErrorMessages, fieldErrors, form, orderSnapshot, orderSnapshotResult, registry, session, state, templateContext]);
 
   const onChange = React.useCallback((formCore: CoreContext<Dict>, current: { name?: string }): void => {
     if (current.name === undefined || current.name === "") return;

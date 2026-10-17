@@ -54,9 +54,14 @@ be registered by `useOrderingField`. Descriptor adapters can map value, change,
 error, selected-option, action-state, and field-derived props.
 
 `useFormPaletteForm()` provides programmatic `get`, `set`, `snapshot`,
-`subscribe`, error, and submit access. `OrderingInput` also supports safe deep
+`subscribe`, error, and submit access. `set_field_error` and `set_errors` accept
+React nodes, including lists of messages; string errors continue to use Form
+Palette's field error state. Pass `null` to clear a rich error; a string error
+previously set for that field is then shown again. `set_errors` updates only
+the fields included in its map. `OrderingInput` also supports safe deep
 templating for descriptor defaults and host props through provider and local
-template contexts.
+template contexts. Hosts can pass `validation_error` directly to an
+`OrderingInput` to render rich React content in the descriptor's error slot.
 
 Pass `snapshot_options` to `FormPaletteOrderingProvider` to include a live
 Ordering-built snapshot in input templates. Templates can read

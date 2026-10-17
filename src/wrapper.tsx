@@ -83,6 +83,8 @@ export interface OrderingInputProps {
   field: ProductField;
   disabled?: boolean;
   className?: string;
+  /** Rich validation content rendered through the Form Palette error slot. */
+  validation_error?: React.ReactNode;
   extra_props?: Record<string, unknown>;
   template_strings?: boolean;
   template_context?: Record<string, unknown>;
@@ -99,11 +101,12 @@ function InputView({
   fieldBinding,
   disabled = false,
   className,
+  validation_error: validationError,
   extra_props: extraProps = {},
   template_strings: templateStrings = true,
   template_context: localTemplateContext = {},
 }: InputViewProps): React.ReactElement {
-  const { session, state, definition, snapshot, snapshot_result: snapshotResult, template_context: providerTemplateContext } = useFormPaletteOrdering();
+  const { session, state, definition, snapshot, snapshot_result: snapshotResult, template_context: providerTemplateContext, field_errors: fieldErrors, field_error_messages: fieldErrorMessages } = useFormPaletteOrdering();
   const context = session.get_context();
   const allowedIds = context?.visibility.optionsByFieldId[field.id];
   const renderedOptions = filterOptions(field.options, allowedIds === undefined ? undefined : new Set(allowedIds));
@@ -177,7 +180,17 @@ function InputView({
   hostProps["variant"] = descriptor.palette_variant;
   hostProps[valueProp] = currentValue;
   hostProps[changeProp] = onChange;
-  hostProps[errorProp] = fieldBinding?.error ?? "";
+  const hasRichFieldError = Object.prototype.hasOwnProperty.call(fieldErrors, field.id);
+  const hasFieldErrorMessage = Object.prototype.hasOwnProperty.call(fieldErrorMessages, field.id);
+  const hasExplicitValidationError = validationError !== undefined;
+  hostProps[errorProp] = hasExplicitValidationError
+    ? validationError
+    : hasRichFieldError
+      ? fieldErrors[field.id]
+      : hasFieldErrorMessage
+        ? fieldErrorMessages[field.id]
+        : fieldBinding?.error ?? "";
+  if ((hasExplicitValidationError && validationError !== null) || hasRichFieldError || hasFieldErrorMessage) hostProps["aria-invalid"] = true;
 
   return <div ref={fieldBinding?.ref as React.Ref<HTMLDivElement> | undefined} className={className}><Component {...hostProps} /></div>;
 }
