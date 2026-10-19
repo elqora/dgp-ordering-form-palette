@@ -18,7 +18,7 @@ import { createDefaultFormPaletteRegistry, type FormPaletteInputRegistry } from 
 type Definition = BuildOrderSnapshotOptions["definition"];
 type SnapshotOptions = Omit<BuildOrderSnapshotOptions, "definition" | "state">;
 type JsonValue = OrderingInputState["values"][string];
-type OrderSnapshot = Extract<BuildOrderSnapshotResult, { ok: true }>["snapshot"];
+type SuccessfulOrderSnapshot = Extract<BuildOrderSnapshotResult, { ok: true }>["snapshot"];
 
 export interface FormPaletteFormApi {
   get(field_id: string): unknown;
@@ -36,7 +36,7 @@ export interface FormPaletteOrderingContextValue {
   core_ref: React.MutableRefObject<CoreContext<Dict> | null>;
   state: Readonly<OrderingInputState>;
   definition?: Definition;
-  snapshot?: OrderSnapshot;
+  snapshot?: SuccessfulOrderSnapshot;
   snapshot_result?: BuildOrderSnapshotResult;
   template_context: Readonly<Record<string, unknown>>;
   field_errors: Readonly<Record<string, React.ReactNode>>;
