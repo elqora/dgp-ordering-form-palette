@@ -161,7 +161,7 @@ describe("OrderingInput", () => {
     await waitFor(() => expect(session.store.get().values).toEqual({ name: "Ada" }));
   });
 
-  it("merges field defaults with host tags without duplicating adapter tags", () => {
+  it("keeps field tags unique and uses explicit host tags in place of adapter tags", () => {
     const product = definition();
     const productField = firstField(product);
     productField.defaults = { tags: [{ label: "Min: 10" }, { label: "Max: 1000" }] };
@@ -175,7 +175,13 @@ describe("OrderingInput", () => {
 
     render(
       <FormPaletteOrderingProvider session={session} definition={product} registry={registry}>
-        <OrderingInput field={productField} extra_props={{ tags: [{ label: "Host notice" }] }} />
+        <OrderingInput field={productField} extra_props={{
+          tags: [
+            { label: "Min: 10", className: "notice" },
+            { label: "Max: 1000", className: "notice" },
+            { label: "Host notice" },
+          ],
+        }} />
       </FormPaletteOrderingProvider>,
     );
 

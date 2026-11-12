@@ -79,6 +79,16 @@ export function templateFormPaletteProps<T>(value: T, context: Record<string, un
   return templateUnknown(value, context) as T;
 }
 
+function mergeTagLists(defaultTags: readonly unknown[], hostTags: readonly unknown[]): unknown[] {
+  const seenLabels = new Set<string>();
+  return [...defaultTags, ...hostTags].filter((tag) => {
+    if (typeof tag !== "object" || tag === null || !("label" in tag) || typeof tag.label !== "string") return true;
+    if (seenLabels.has(tag.label)) return false;
+    seenLabels.add(tag.label);
+    return true;
+  });
+}
+
 export interface OrderingInputProps {
   field: ProductField;
   disabled?: boolean;
@@ -168,11 +178,15 @@ function InputView({
     : Array.isArray(fieldProps.tags)
       ? fieldProps.tags as unknown[]
       : [];
+  const hasTags = Array.isArray(renderedDefaults.tags)
+    || Array.isArray(renderedExtraProps.tags)
+    || Array.isArray(fieldProps.tags);
+  const mergedTags = mergeTagLists(defaultTags, hostTags);
   const hostProps: Record<string, unknown> = {
     ...fieldProps,
     ...renderedDefaults,
     ...renderedExtraProps,
-    ...(defaultTags.length || hostTags.length ? { tags: [...defaultTags, ...hostTags] } : {}),
+    ...(hasTags ? { tags: mergedTags } : {}),
     id: field.id,
     label: field.label,
     description: field.description,
