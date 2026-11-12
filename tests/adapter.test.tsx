@@ -161,7 +161,7 @@ describe("OrderingInput", () => {
     await waitFor(() => expect(session.store.get().values).toEqual({ name: "Ada" }));
   });
 
-  it("merges field defaults and host tag props", () => {
+  it("merges field defaults with host tags without duplicating adapter tags", () => {
     const product = definition();
     const productField = firstField(product);
     productField.defaults = { tags: [{ label: "Min: 10" }, { label: "Max: 1000" }] };
@@ -180,7 +180,6 @@ describe("OrderingInput", () => {
     );
 
     expect(seen.at(-1)?.tags).toEqual([
-      { label: "Adapter notice" },
       { label: "Min: 10" },
       { label: "Max: 1000" },
       { label: "Host notice" },

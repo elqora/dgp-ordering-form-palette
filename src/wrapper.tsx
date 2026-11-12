@@ -162,12 +162,17 @@ function InputView({
   const renderedDefaults = templateStrings ? templateFormPaletteProps(defaults, templateContext) : defaults;
   const renderedExtraProps = templateStrings ? templateFormPaletteProps(extraProps, templateContext) : extraProps;
   const fieldProps = adapter.get_input_props_from_field?.(adapterContext) ?? {};
-  const tagSources = [fieldProps.tags, renderedDefaults.tags, renderedExtraProps.tags].filter(Array.isArray);
+  const defaultTags: unknown[] = Array.isArray(renderedDefaults.tags) ? renderedDefaults.tags as unknown[] : [];
+  const hostTags: unknown[] = Array.isArray(renderedExtraProps.tags)
+    ? renderedExtraProps.tags as unknown[]
+    : Array.isArray(fieldProps.tags)
+      ? fieldProps.tags as unknown[]
+      : [];
   const hostProps: Record<string, unknown> = {
     ...fieldProps,
     ...renderedDefaults,
     ...renderedExtraProps,
-    ...(tagSources.length ? { tags: tagSources.flat() } : {}),
+    ...(defaultTags.length || hostTags.length ? { tags: [...defaultTags, ...hostTags] } : {}),
     id: field.id,
     label: field.label,
     description: field.description,
