@@ -161,6 +161,32 @@ describe("OrderingInput", () => {
     await waitFor(() => expect(session.store.get().values).toEqual({ name: "Ada" }));
   });
 
+  it("merges field defaults and host tag props", () => {
+    const product = definition();
+    const productField = firstField(product);
+    productField.defaults = { tags: [{ label: "Min: 10" }, { label: "Max: 1000" }] };
+    const seen: Record<string, unknown>[] = [];
+    const descriptor = createFormPaletteDescriptor("select", "single", {}, {
+      Component: (props) => { seen.push(props); return <div />; },
+      adapter: { get_input_props_from_field: () => ({ tags: [{ label: "Adapter notice" }] }) },
+    });
+    const registry = createFormPaletteInputRegistry([descriptor]);
+    const session = createOrderingSession(product, "root", undefined, registry);
+
+    render(
+      <FormPaletteOrderingProvider session={session} definition={product} registry={registry}>
+        <OrderingInput field={productField} extra_props={{ tags: [{ label: "Host notice" }] }} />
+      </FormPaletteOrderingProvider>,
+    );
+
+    expect(seen.at(-1)?.tags).toEqual([
+      { label: "Adapter notice" },
+      { label: "Min: 10" },
+      { label: "Max: 1000" },
+      { label: "Host notice" },
+    ]);
+  });
+
   it("renders rich validation content in the Form Palette error slot and marks the field invalid", async () => {
     const product = definition();
     product.fields = [{ id: "quantity", type: "number", label: "Quantity", bind_id: "root" }];

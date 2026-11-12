@@ -162,10 +162,12 @@ function InputView({
   const renderedDefaults = templateStrings ? templateFormPaletteProps(defaults, templateContext) : defaults;
   const renderedExtraProps = templateStrings ? templateFormPaletteProps(extraProps, templateContext) : extraProps;
   const fieldProps = adapter.get_input_props_from_field?.(adapterContext) ?? {};
+  const tagSources = [fieldProps.tags, renderedDefaults.tags, renderedExtraProps.tags].filter(Array.isArray);
   const hostProps: Record<string, unknown> = {
     ...fieldProps,
     ...renderedDefaults,
     ...renderedExtraProps,
+    ...(tagSources.length ? { tags: tagSources.flat() } : {}),
     id: field.id,
     label: field.label,
     description: field.description,
